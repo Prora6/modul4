@@ -1,0 +1,9 @@
+[package]
+name = "mirror_plugin"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "mirror"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]

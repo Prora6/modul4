@@ -1,0 +1,6 @@
+[http]
+check-revoke = false
+multiplexing = false
+
+[registries.crates-io]
+protocol = "sparse"

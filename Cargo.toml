@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = [
+    "image_processor",
+    "plugin_interface",
+    "mirror_plugin",
+    "blur_plugin",
+]
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+
+[workspace.dependencies]
+clap = { version = "4", features = ["derive"] }
+image = "0.25"
+libloading = "0.8"
+thiserror = "2"
+plugin_interface = { path = "plugin_interface" }

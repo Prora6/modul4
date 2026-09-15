@@ -1,0 +1,19 @@
+[package]
+name = "image_processor"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "image_processor"
+path = "src/main.rs"
+
+[lib]
+name = "image_processor"
+path = "src/lib.rs"
+
+[dependencies]
+clap = { workspace = true }
+image = { workspace = true }
+libloading = { workspace = true }
+thiserror = { workspace = true }
+plugin_interface = { workspace = true }

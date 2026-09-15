@@ -1,0 +1,9 @@
+[package]
+name = "blur_plugin"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "blur"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]

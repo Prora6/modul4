@@ -74,7 +74,9 @@ pub fn apply_blur(width: u32, height: u32, rgba: &mut [u8], params: BlurParams) 
         return;
     }
 
-    let radius = params.radius as isize;
+    // Prefer try_from over `as`: on 16-bit targets usize may be narrower than u32.
+    // If conversion fails, clamp to the maximum representable radius.
+    let radius = usize::try_from(params.radius).unwrap_or(usize::MAX);
     let mut src = rgba.to_vec();
     let mut dst = vec![0u8; expected];
 
@@ -84,24 +86,27 @@ pub fn apply_blur(width: u32, height: u32, rgba: &mut [u8], params: BlurParams) 
                 let mut sum = [0u32; 4];
                 let mut count = 0u32;
 
-                let y0 = (y as isize - radius).max(0) as usize;
-                let y1 = (y as isize + radius).min(h as isize - 1) as usize;
-                let x0 = (x as isize - radius).max(0) as usize;
-                let x1 = (x as isize + radius).min(w as isize - 1) as usize;
+                // saturating_* avoids overflow before clamping to image bounds
+                // (unlike `(y as isize + radius).min(...)`, which adds first).
+                let y0 = y.saturating_sub(radius);
+                let y1 = y.saturating_add(radius).min(h.saturating_sub(1));
+                let x0 = x.saturating_sub(radius);
+                let x1 = x.saturating_add(radius).min(w.saturating_sub(1));
 
                 for yy in y0..=y1 {
                     for xx in x0..=x1 {
                         let idx = (yy * w + xx) * BYTES_PER_PIXEL;
                         for c in 0..BYTES_PER_PIXEL {
-                            sum[c] += u32::from(src[idx + c]);
+                            sum[c] = sum[c].saturating_add(u32::from(src[idx + c]));
                         }
-                        count += 1;
+                        count = count.saturating_add(1);
                     }
                 }
 
                 let out = (y * w + x) * BYTES_PER_PIXEL;
+                let divisor = count.max(1);
                 for c in 0..BYTES_PER_PIXEL {
-                    dst[out + c] = (sum[c] / count) as u8;
+                    dst[out + c] = (sum[c] / divisor) as u8;
                 }
             }
         }
@@ -235,5 +240,21 @@ mod tests {
             buf[top] > 0 || buf[top + 1] > 0 || buf[top + 2] > 0,
             "neighbors should be non-zero after blurring a bright center"
         );
+    }
+
+    #[test]
+    fn blur_huge_radius_does_not_panic() {
+        let mut buf = vec![10u8; 2 * 2 * 4];
+        apply_blur(
+            2,
+            2,
+            &mut buf,
+            BlurParams {
+                radius: u32::MAX,
+                iterations: 1,
+            },
+        );
+        // Full-image average of a constant buffer stays constant.
+        assert!(buf.iter().all(|&b| b == 10));
     }
 }
